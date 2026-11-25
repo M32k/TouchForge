@@ -224,3 +224,60 @@ final class StockWidget: TimedWidget {
         return formatter.string(from: NSNumber(value: price)) ?? String(price)
     }
 }
+
+// MARK: - LimitLens 구독 한도 (LimitLens 앱이 저장한 파일을 읽는다)
+
+final class LimitLensUsageWidget: TimedWidget {
+    static let fileURL = FileManager.default.homeDirectoryForCurrentUser
+        .appendingPathComponent("Library/Application Support/LimitLens/snapshots.json")
+
+    private static let letters = ["claude": "C", "codex": "X", "gemini": "G"]
+    private let providers: Set<String>?
+
+    init(button: ActionButton, providers: [String]?, interval: TimeInterval, prefix: String?) {
+        self.providers = providers.map { Set($0.map { $0.lowercased() }) }
+        super.init(button: button, interval: interval, prefix: prefix)
+    }
+
+    override func update() {
+        guard let data = try? Data(contentsOf: Self.fileURL),
+              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
+              let snapshots = json["snapshots"] as? [[String: Any]] else {
+            show("한도 —")
+            return
+        }
+
+        // LimitLens 가 30분 넘게 갱신을 안 했으면 회색으로 (앱이 꺼져 있을 수 있음)
+        let updatedAt = (json["updatedAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue) }
+        let isStale = updatedAt.map { Date().timeIntervalSince($0) > 30 * 60 } ?? true
+
+        var entries: [(text: String, color: NSColor?)] = []
+        for snapshot in snapshots {
+            guard let provider = snapshot["provider"] as? String else { continue }
+            if let providers, !providers.contains(provider) { continue }
+            let letter = Self.letters[provider] ?? String(provider.prefix(1)).uppercased()
+            let windows = snapshot["windows"] as? [[String: Any]] ?? []
+            guard let used = (windows.first?["usedPercent"] as? NSNumber)?.doubleValue else {
+                entries.append((text: letter + "—", color: NSColor.secondaryLabelColor))
+                continue
+            }
+            var color: NSColor? = nil
+            if used >= 90 { color = .systemRed } else if used >= 70 { color = .systemOrange }
+            if isStale { color = .secondaryLabelColor }
+            entries.append((text: "\(letter)\(Int(used.rounded()))", color: color))
+        }
+
+        guard !entries.isEmpty else {
+            show("한도 —")
+            return
+        }
+
+        var parts: [(text: String, color: NSColor?)] = []
+        if let prefix, !prefix.isEmpty { parts.append((text: "\(prefix) ", color: nil)) }
+        for (index, entry) in entries.enumerated() {
+            if index > 0 { parts.append((text: " ", color: nil)) }
+            parts.append(entry)
+        }
+        button.setParts(parts)
+    }
+}

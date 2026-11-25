@@ -6,6 +6,7 @@ enum DefaultConfig {
 {
   "mode": "strip",
   "strip": [
+    {"type": "limitlens", "fontSize": 13},
     {"type": "battery", "width": 58},
     {"type": "clock", "format": "HH:mm", "width": 50}
   ],

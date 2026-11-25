@@ -71,6 +71,19 @@ enum ItemFactory {
             )
             return wrap(button, identifier, config, widget: widget)
 
+        case "limitlens", "usage":
+            // LimitLens 앱이 저장한 구독 한도 % 표시. 누르면 LimitLens 를 연다
+            var c = config
+            if c.action == nil { c.action = ActionConfig(type: "launch", app: "com.m32k.limitlens") }
+            let button = makeButton(c, bordered: false, monospaced: true, useTitle: false)
+            let widget = LimitLensUsageWidget(
+                button: button,
+                providers: config.providers,
+                interval: config.interval ?? 30,
+                prefix: config.title
+            )
+            return wrap(button, identifier, c, widget: widget)
+
         case "shell":
             let button = makeButton(config, bordered: false, monospaced: false, useTitle: false)
             let widget = ShellWidget(button: button, command: config.command ?? "echo 'command 없음'", interval: config.interval ?? 10, prefix: config.title)

@@ -42,6 +42,21 @@ final class ActionButton: NSButton {
         attributes[.paragraphStyle] = paragraph
         attributedTitle = NSAttributedString(string: text, attributes: attributes)
     }
+
+    /// 조각마다 다른 색으로 제목을 만든다 (예: C42 는 흰색, X73 은 주황)
+    func setParts(_ parts: [(text: String, color: NSColor?)]) {
+        let paragraph = NSMutableParagraphStyle()
+        paragraph.alignment = .center
+        let result = NSMutableAttributedString()
+        for part in parts {
+            result.append(NSAttributedString(string: part.text, attributes: [
+                .font: textFont,
+                .foregroundColor: part.color ?? textColor ?? NSColor.white,
+                .paragraphStyle: paragraph,
+            ]))
+        }
+        attributedTitle = result
+    }
 }
 
 /// 탭할 수 있는 이미지 뷰 (PNG/JPG/GIF 애니메이션)
