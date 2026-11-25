@@ -1,54 +1,60 @@
 {
+  "mode": "strip",
+  "strip": [
+    {"type": "battery", "width": 58},
+    {"type": "clock", "format": "HH:mm", "width": 50}
+  ],
+  "passthrough": ["com.apple.FinalCut"],
   "hideControlStrip": true,
   "default": [
-    { "type": "button", "symbol": "terminal", "action": { "type": "launch", "app": "com.apple.Terminal" } },
-    { "type": "button", "symbol": "safari", "action": { "type": "launch", "app": "com.apple.Safari" } },
-    { "type": "image", "image": "sample.gif", "width": 60 },
-    { "type": "marquee", "text": "TouchForge — config.json 을 저장하면 바로 반영돼요 ✨", "width": 180, "color": "#64D2FF" },
-    { "type": "flexibleSpace" },
-    { "type": "stock", "ticker": "005930.KS", "name": "삼성전자" },
-    { "type": "weather", "latitude": 35.18, "longitude": 129.08 },
-    { "type": "battery" },
-    { "type": "clock", "format": "M/d(E) HH:mm" },
-    { "type": "button", "symbol": "speaker.wave.1", "action": { "type": "media", "key": "volumeDown" }, "longAction": { "type": "media", "key": "mute" } },
-    { "type": "button", "symbol": "speaker.wave.3", "action": { "type": "media", "key": "volumeUp" } },
-    { "type": "close" }
+    {"type": "button", "symbol": "terminal", "action": {"type": "launch", "app": "com.apple.Terminal"}},
+    {"type": "button", "symbol": "safari", "action": {"type": "launch", "app": "com.apple.Safari"}},
+    {"type": "image", "image": "sample.gif", "width": 60},
+    {"type": "marquee", "text": "TouchForge — config.json 을 저장하면 바로 반영돼요 ✨", "width": 180, "color": "#64D2FF"},
+    {"type": "flexibleSpace"},
+    {"type": "stock", "ticker": "005930.KS", "name": "삼성전자"},
+    {"type": "weather", "latitude": 35.18, "longitude": 129.08},
+    {"type": "battery"},
+    {"type": "clock", "format": "M/d(E) HH:mm"},
+    {"type": "button", "symbol": "speaker.wave.1", "action": {"type": "media", "key": "volumeDown"}, "longAction": {"type": "media", "key": "mute"}},
+    {"type": "button", "symbol": "speaker.wave.3", "action": {"type": "media", "key": "volumeUp"}},
+    {"type": "close"}
   ],
   "apps": {
     "com.apple.Safari": [
-      { "type": "button", "symbol": "chevron.left", "action": { "type": "key", "key": "[", "modifiers": ["cmd"] } },
-      { "type": "button", "symbol": "chevron.right", "action": { "type": "key", "key": "]", "modifiers": ["cmd"] } },
-      { "type": "button", "symbol": "arrow.clockwise", "action": { "type": "key", "key": "r", "modifiers": ["cmd"] } },
-      { "type": "button", "title": "새 탭", "symbol": "plus", "action": { "type": "key", "key": "t", "modifiers": ["cmd"] } },
-      { "type": "button", "title": "velog", "bg": "#20C997", "action": { "type": "url", "url": "https://velog.io" } },
-      { "type": "flexibleSpace" },
-      { "type": "battery" },
-      { "type": "clock", "format": "HH:mm" },
-      { "type": "button", "symbol": "speaker.wave.1", "action": { "type": "media", "key": "volumeDown" }, "longAction": { "type": "media", "key": "mute" } },
-      { "type": "button", "symbol": "speaker.wave.3", "action": { "type": "media", "key": "volumeUp" } },
-      { "type": "close" }
+      {"type": "button", "symbol": "chevron.left", "action": {"type": "key", "key": "[", "modifiers": ["cmd"]}},
+      {"type": "button", "symbol": "chevron.right", "action": {"type": "key", "key": "]", "modifiers": ["cmd"]}},
+      {"type": "button", "symbol": "arrow.clockwise", "action": {"type": "key", "key": "r", "modifiers": ["cmd"]}},
+      {"type": "button", "title": "새 탭", "symbol": "plus", "action": {"type": "key", "key": "t", "modifiers": ["cmd"]}},
+      {"type": "button", "title": "velog", "bg": "#20C997", "action": {"type": "url", "url": "https://velog.io"}},
+      {"type": "flexibleSpace"},
+      {"type": "battery"},
+      {"type": "clock", "format": "HH:mm"},
+      {"type": "button", "symbol": "speaker.wave.1", "action": {"type": "media", "key": "volumeDown"}, "longAction": {"type": "media", "key": "mute"}},
+      {"type": "button", "symbol": "speaker.wave.3", "action": {"type": "media", "key": "volumeUp"}},
+      {"type": "close"}
     ],
     "com.apple.Music": [
-      { "type": "button", "symbol": "backward.fill", "action": { "type": "media", "key": "previous" } },
-      { "type": "button", "symbol": "playpause.fill", "action": { "type": "media", "key": "playPause" } },
-      { "type": "button", "symbol": "forward.fill", "action": { "type": "media", "key": "next" } },
-      { "type": "image", "image": "sample.gif", "width": 60 },
-      { "type": "shell", "title": "♪", "interval": 3, "width": 360, "command": "osascript -e 'if application \"Music\" is running then' -e 'tell application \"Music\"' -e 'if player state is playing then return (artist of current track) & \" - \" & (name of current track)' -e 'end tell' -e 'end if' -e 'return \"재생 중 아님\"'" },
-      { "type": "flexibleSpace" },
-      { "type": "button", "symbol": "speaker.wave.1", "action": { "type": "media", "key": "volumeDown" }, "longAction": { "type": "media", "key": "mute" } },
-      { "type": "button", "symbol": "speaker.wave.3", "action": { "type": "media", "key": "volumeUp" } },
-      { "type": "close" }
+      {"type": "button", "symbol": "backward.fill", "action": {"type": "media", "key": "previous"}},
+      {"type": "button", "symbol": "playpause.fill", "action": {"type": "media", "key": "playPause"}},
+      {"type": "button", "symbol": "forward.fill", "action": {"type": "media", "key": "next"}},
+      {"type": "image", "image": "sample.gif", "width": 60},
+      {"type": "shell", "title": "♪", "interval": 3, "width": 360, "command": "osascript -e 'if application \"Music\" is running then' -e 'tell application \"Music\"' -e 'if player state is playing then return (artist of current track) & \" - \" & (name of current track)' -e 'end tell' -e 'end if' -e 'return \"재생 중 아님\"'"},
+      {"type": "flexibleSpace"},
+      {"type": "button", "symbol": "speaker.wave.1", "action": {"type": "media", "key": "volumeDown"}, "longAction": {"type": "media", "key": "mute"}},
+      {"type": "button", "symbol": "speaker.wave.3", "action": {"type": "media", "key": "volumeUp"}},
+      {"type": "close"}
     ],
     "com.microsoft.VSCode": [
-      { "type": "button", "title": "명령", "symbol": "command", "action": { "type": "key", "key": "p", "modifiers": ["cmd", "shift"] } },
-      { "type": "button", "title": "사이드바", "action": { "type": "key", "key": "b", "modifiers": ["cmd"] } },
-      { "type": "button", "title": "터미널", "symbol": "terminal", "action": { "type": "key", "key": "`", "modifiers": ["control"] } },
-      { "type": "button", "title": "알림 테스트", "bg": "#5E5CE6", "action": { "type": "shell", "command": "osascript -e 'display notification \"터치바 버튼으로 셸 명령을 실행했어요\" with title \"TouchForge\"'" } },
-      { "type": "flexibleSpace" },
-      { "type": "cpu" },
-      { "type": "memory" },
-      { "type": "clock", "format": "HH:mm:ss" },
-      { "type": "close" }
+      {"type": "button", "title": "명령", "symbol": "command", "action": {"type": "key", "key": "p", "modifiers": ["cmd", "shift"]}},
+      {"type": "button", "title": "사이드바", "action": {"type": "key", "key": "b", "modifiers": ["cmd"]}},
+      {"type": "button", "title": "터미널", "symbol": "terminal", "action": {"type": "key", "key": "`", "modifiers": ["control"]}},
+      {"type": "button", "title": "알림 테스트", "bg": "#5E5CE6", "action": {"type": "shell", "command": "osascript -e 'display notification \"터치바 버튼으로 셸 명령을 실행했어요\" with title \"TouchForge\"'"}},
+      {"type": "flexibleSpace"},
+      {"type": "cpu"},
+      {"type": "memory"},
+      {"type": "clock", "format": "HH:mm:ss"},
+      {"type": "close"}
     ]
   }
 }
