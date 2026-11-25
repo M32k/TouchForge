@@ -77,7 +77,7 @@ open /Applications/TouchForge.app
 ```json
 {
   "mode": "strip",
-  "strip": [ { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
+  "strip": [ { "type": "limitlens", "fontSize": 13 }, { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
   "passthrough": [ "com.apple.FinalCut" ],
   "hideControlStrip": true,
   "default": [ 아이템, 아이템, ... ],
@@ -129,6 +129,7 @@ open /Applications/TouchForge.app
 | `weather` | 현재 날씨·기온 | `latitude`, `longitude` |
 | `stock` | 주가·등락률 (상승 빨강/하락 파랑) | `ticker` (`"005930.KS"`, `"AAPL"`), `name` |
 | `shell` | 셸 명령 결과 첫 줄 | `command` |
+| `limitlens` | [LimitLens](https://github.com/M32k/LimitLens) 구독 한도 % (`C42 X73 G12`, 70%↑ 주황·90%↑ 빨강, 누르면 LimitLens 열기) | `providers` (예: `["claude", "codex"]`) |
 | `image` / `gif` | 이미지·움직이는 GIF | `image` |
 | `marquee` | 흐르는 글자 | `text`, `speed` (초당 pt, 기본 40) |
 | `space` | 빈칸 | `width` |
