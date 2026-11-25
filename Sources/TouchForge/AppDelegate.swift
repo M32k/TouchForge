@@ -58,8 +58,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
     private func reloadConfig() {
         do {
-            config = try store.load()
+            let loaded = try store.load()
+            config = loaded
             configError = nil
+            // 애플 터치바 유지 모드: 자동으로 덮지 않고, 컨트롤 스트립에 아이템만 붙인다
+            controller.autoPresent = !loaded.isStripMode
+            controller.installStripItems(loaded.isStripMode ? (loaded.strip ?? []) : [])
+            if loaded.isStripMode { controller.hideIfShown() }
         } catch {
             configError = describeConfigError(error)
             Log.error("설정 읽기 실패: \(configError ?? "")")
@@ -94,6 +99,26 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             key = "default"
             items = config.defaultItems
         }
+        let hideStrip = config.hideControlStrip ?? true
+
+        // 애플 터치바 유지 모드: 프리셋은 미리 만들어만 두고(아이콘 누르면 열림),
+        // 앱을 바꾸면 애플 터치바로 돌아간다
+        if config.isStripMode {
+            if reloaded || key != currentPresetKey {
+                currentPresetKey = key
+                controller.show(items, hideControlStrip: hideStrip, forcePresent: false)
+            }
+            if !reloaded { controller.hideIfShown() }
+            return
+        }
+
+        // 전체 모드에서도 passthrough 앱에서는 애플 터치바를 보여준다
+        if let bundleID = frontmostBundleID, config.passthrough?.contains(bundleID) == true {
+            currentPresetKey = "passthrough:\(bundleID)"
+            controller.hideIfShown()
+            return
+        }
+        let comingBackFromPassthrough = currentPresetKey?.hasPrefix("passthrough:") == true
 
         // 같은 프리셋이면 다시 만들지 않고, 접어 둔 게 아니면 다시 띄우기만 한다
         if !reloaded && key == currentPresetKey {
@@ -101,7 +126,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             return
         }
         currentPresetKey = key
-        controller.show(items, hideControlStrip: config.hideControlStrip ?? true, forcePresent: reloaded)
+        controller.show(items, hideControlStrip: hideStrip, forcePresent: reloaded || comingBackFromPassthrough)
     }
 
     /// 앱 프리셋 안의 { "type": "defaults" } 를 기본 아이템들로 펼친다
@@ -141,12 +166,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             addInfo(menu, "⚠️ " + String(configError.prefix(70)))
         }
         let presetName: String
-        if let key = currentPresetKey, key != "default" {
+        if let key = currentPresetKey, key.hasPrefix("passthrough:") {
+            presetName = "애플 기본 터치바"
+        } else if let key = currentPresetKey, key != "default" {
             presetName = appName(for: key) ?? key
         } else {
             presetName = "기본"
         }
         addInfo(menu, "현재 프리셋: \(presetName)")
+        addInfo(menu, config?.isStripMode == true ? "모드: 애플 터치바 유지 (아이콘을 누르면 열림)" : "모드: 항상 TouchForge 로 덮기")
         menu.addItem(.separator())
 
         addAction(menu, "터치바 보이기", #selector(showBar))

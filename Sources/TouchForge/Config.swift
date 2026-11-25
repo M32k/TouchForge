@@ -2,6 +2,13 @@ import AppKit
 
 /// config.json 최상위 구조
 struct TouchForgeConfig: Codable {
+    /// "strip": 애플 기본 터치바를 유지하고 컨트롤 스트립에 아이템만 추가 (아이콘을 누르면 전체 터치바)
+    /// "full": 항상 TouchForge 터치바로 덮기
+    var mode: String?
+    /// strip 모드에서 컨트롤 스트립에 붙일 작은 아이템들
+    var strip: [ItemConfig]?
+    /// full 모드에서도 이 앱들(번들 ID)에서는 애플 터치바를 보여준다
+    var passthrough: [String]?
     /// true 면 오른쪽 시스템 컨트롤 스트립까지 덮고 터치바 전체를 사용한다
     var hideControlStrip: Bool?
     /// 기본 터치바 구성 (JSON 키: "default")
@@ -9,7 +16,12 @@ struct TouchForgeConfig: Codable {
     /// 앱별 프리셋. 키는 번들 ID (예: "com.apple.Safari")
     var apps: [String: [ItemConfig]]?
 
+    var isStripMode: Bool { (mode ?? "full").lowercased() == "strip" }
+
     enum CodingKeys: String, CodingKey {
+        case mode
+        case strip
+        case passthrough
         case hideControlStrip
         case defaultItems = "default"
         case apps

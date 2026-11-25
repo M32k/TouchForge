@@ -13,6 +13,14 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
     private(set) var hideControlStrip = true
     /// 사용자가 접어 둔 상태인지 (앱 전환 때 마음대로 다시 펼치지 않기 위해)
     private(set) var isMinimized = false
+    /// 지금 우리 터치바가 화면에 떠 있는지
+    private(set) var isPresented = false
+    /// false 면 아이템을 바꿔도 저절로 띄우지 않는다 (애플 터치바 유지 모드)
+    var autoPresent = true
+
+    /// 컨트롤 스트립에 끼워 넣은 작은 아이템들 (애플 터치바 유지 모드)
+    private var stripItems: [NSTouchBarItem] = []
+    private var stripWidgets: [Widget] = []
 
     override init() {
         super.init()
@@ -75,9 +83,42 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
         self.hideControlStrip = hideControlStrip
         widgets.forEach { $0.start() }
 
-        if forcePresent || !isMinimized {
+        if forcePresent || (autoPresent && !isMinimized) {
             present()
         }
+    }
+
+    /// 떠 있으면 접어서 애플 기본 터치바로 돌려준다
+    func hideIfShown() {
+        if isPresented { minimize() }
+    }
+
+    // MARK: 컨트롤 스트립 아이템
+
+    /// 애플 터치바는 그대로 두고, 오른쪽 컨트롤 스트립에 작은 아이템을 붙인다
+    func installStripItems(_ configs: [ItemConfig]) {
+        removeStripItems()
+        for (index, config) in configs.enumerated() {
+            let identifier = NSTouchBarItem.Identifier("com.m32k.TouchForge.strip.\(index)")
+            let built = ItemFactory.make(config, identifier: identifier)
+            stripItems.append(built.item)
+            if let widget = built.widget {
+                stripWidgets.append(widget)
+                widget.start()
+            }
+            PrivateTouchBar.addSystemTrayItem(built.item)
+            PrivateTouchBar.setControlStripPresence(identifier, present: true)
+        }
+    }
+
+    func removeStripItems() {
+        stripWidgets.forEach { $0.stop() }
+        stripWidgets.removeAll()
+        for item in stripItems {
+            PrivateTouchBar.setControlStripPresence(item.identifier, present: false)
+            PrivateTouchBar.removeSystemTrayItem(item)
+        }
+        stripItems.removeAll()
     }
 
     /// 에러 메시지를 터치바에 빨간 글씨로 띄운다
@@ -88,15 +129,18 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
     func present() {
         PrivateTouchBar.present(touchBar, trayIdentifier: Self.trayIdentifier, hideControlStrip: hideControlStrip)
         isMinimized = false
+        isPresented = true
     }
 
     func minimize() {
         PrivateTouchBar.minimize(touchBar)
         isMinimized = true
+        isPresented = false
     }
 
     func shutdown() {
         stopWidgets()
+        removeStripItems()
         PrivateTouchBar.dismiss(touchBar)
         uninstallTrayItem()
     }
