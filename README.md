@@ -9,6 +9,15 @@
 - **앱별 프리셋**: 번들 ID 마다 다른 터치바, 앱을 바꾸면 자동 전환
 - `config.json` 을 저장하는 순간 바로 반영 (재시작 필요 없음)
 
+## 두 가지 모드
+
+| 모드 | 동작 |
+|---|---|
+| `"strip"` (기본) | **애플 기본 터치바를 그대로 유지**. 각 앱의 기본 버튼과 오른쪽 컨트롤 스트립은 그대로 있고, 컨트롤 스트립에 내 위젯(`strip`)과 TouchForge 아이콘만 추가돼요. 아이콘을 누르면 전체 커스텀 터치바(앱별 프리셋)가 열리고, « 를 누르거나 다른 앱으로 넘어가면 애플 터치바로 돌아가요. |
+| `"full"` | 항상 TouchForge 터치바로 덮어요. `passthrough` 에 적은 앱(번들 ID)에서만 애플 터치바가 나와요. |
+
+컨트롤 스트립은 자리가 좁아서 `strip` 아이템은 2~3개, 각각 `width` 50~70 정도가 알맞아요.
+
 > ⚠️ 시스템 전체 터치바는 Apple **비공개 API**(DFRFoundation)를 씁니다. MTMR, Pock 과 같은 방식이라
 > 앱스토어 배포는 안 되고, macOS 업데이트로 막힐 수 있어요.
 
@@ -67,6 +76,9 @@ open /Applications/TouchForge.app
 
 ```json
 {
+  "mode": "strip",
+  "strip": [ { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
+  "passthrough": [ "com.apple.FinalCut" ],
   "hideControlStrip": true,
   "default": [ 아이템, 아이템, ... ],
   "apps": {
@@ -76,6 +88,9 @@ open /Applications/TouchForge.app
 }
 ```
 
+- `mode`: `"strip"`(애플 터치바 유지) 또는 `"full"`(항상 덮기)
+- `strip`: strip 모드에서 컨트롤 스트립에 붙일 작은 아이템
+- `passthrough`: full 모드에서 애플 터치바를 그대로 보여줄 앱의 번들 ID 목록
 - `hideControlStrip`: `true` 면 오른쪽 시스템 영역까지 덮고 터치바 전체를 씀 (볼륨 버튼 등을 직접 넣어야 함)
 - `default`: 프리셋이 없는 앱에서 쓰는 기본 구성
 - `apps`: 번들 ID 별 구성. 안에 `{ "type": "defaults" }` 를 넣으면 그 자리에 기본 아이템들이 들어감
