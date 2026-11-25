@@ -1,0 +1,40 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Swift 버전
+        run: swift --version
+
+      - name: 유니버설(인텔 + 애플 실리콘) 빌드
+        run: ARCHS="x86_64 arm64" bash scripts/build-app.sh
+
+      - name: 인텔(x86_64) 포함 여부 확인
+        run: lipo -archs build/TouchForge.app/Contents/MacOS/TouchForge | grep -q x86_64
+
+      - name: zip 으로 묶기
+        run: cd build && ditto -c -k --keepParent TouchForge.app TouchForge.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TouchForge
+          path: build/TouchForge.zip
+
+      - name: 태그면 릴리스에 올리기
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: build/TouchForge.zip
