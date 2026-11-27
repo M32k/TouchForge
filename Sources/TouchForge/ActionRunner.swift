@@ -5,6 +5,9 @@ import ApplicationServices
 enum ActionRunner {
     /// "minimize" 동작이 불리면 실행할 콜백 (AppDelegate 가 연결)
     static var minimizeHandler: (() -> Void)?
+    /// "usage": 구독 한도 상세 터치바 열기 / "usageRefresh": 한도 새로고침
+    static var usageHandler: (() -> Void)?
+    static var usageRefreshHandler: (() -> Void)?
 
     static func run(_ action: ActionConfig) {
         switch action.type.lowercased() {
@@ -22,6 +25,10 @@ enum ActionRunner {
             if let source = action.source { runAppleScript(source) }
         case "minimize", "close":
             minimizeHandler?()
+        case "usage":
+            usageHandler?()
+        case "usagerefresh":
+            usageRefreshHandler?()
         default:
             Log.error("알 수 없는 action type: \(action.type)")
         }

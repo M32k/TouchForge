@@ -80,7 +80,7 @@ final class TapImageView: NSImageView {
 }
 
 /// 흐르는 글자 (전광판)
-final class MarqueeView: NSView, Widget {
+final class MarqueeView: NSView, BarWidget {
     var text: String = "" {
         didSet { textWidth = (text as NSString).size(withAttributes: attributes).width }
     }

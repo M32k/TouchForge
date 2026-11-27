@@ -1,5 +1,7 @@
 import AppKit
+import Combine
 import ServiceManagement
+import SwiftUI
 
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let controller = TouchBarController()
@@ -11,19 +13,34 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var frontmostBundleID: String?
     private var currentPresetKey: String?
 
+    // 구독 한도 (메뉴바 팝오버 · 설정 창)
+    private let statusMenu = NSMenu()
+    private var popover: NSPopover?
+    private var usageSettingsWindow: NSWindow?
+    private var usageObserver: AnyCancellable?
+
     // MARK: - 앱 생명주기
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         setupStatusItem()
+        startUsage()
         ActionRunner.minimizeHandler = { [weak self] in
             self?.controller.minimize()
+            self?.restorePresetAfterUsage()
+        }
+        ActionRunner.usageHandler = { [weak self] in
+            self?.showUsageTouchBar()
+        }
+        ActionRunner.usageRefreshHandler = { [weak self] in
+            Task { @MainActor in
+                await UsageStore.shared.refresh()
+                if self?.currentPresetKey == "usage" { self?.showUsageTouchBar() }
+            }
         }
 
+        // 터치바가 없는 Mac 에서도 구독 한도(메뉴바·위젯)는 동작한다
         guard PrivateTouchBar.isAvailable else {
-            showAlert(
-                title: "시스템 터치바 API를 찾지 못했어요",
-                message: "이 Mac 또는 macOS 버전에서는 TouchForge 가 터치바를 바꿀 수 없습니다. 터치바가 있는 MacBook Pro 에서 실행했는지 확인해 주세요."
-            )
+            Log.error("시스템 터치바 API 를 찾지 못했어요. 구독 한도 기능만 동작합니다.")
             return
         }
         controller.installTrayItem()
@@ -144,14 +161,136 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if let image = NSImage(systemSymbolName: "rectangle.grid.1x2", accessibilityDescription: "TouchForge") {
                 image.isTemplate = true
                 button.image = image
+                button.imagePosition = .imageLeading
             } else {
                 button.title = "TF"
             }
+            // 왼쪽 클릭: 구독 한도 팝오버, 오른쪽 클릭: TouchForge 메뉴
+            button.target = self
+            button.action = #selector(statusButtonClicked(_:))
+            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
         }
-        let menu = NSMenu()
-        menu.delegate = self
-        item.menu = menu
+        statusMenu.delegate = self
         statusItem = item
+    }
+
+    @objc private func statusButtonClicked(_ sender: NSStatusBarButton) {
+        if NSApp.currentEvent?.type == .rightMouseUp {
+            showStatusMenu()
+        } else {
+            togglePopover()
+        }
+    }
+
+    private func showStatusMenu() {
+        popover?.performClose(nil)
+        guard let statusItem, let button = statusItem.button else { return }
+        statusItem.menu = statusMenu
+        button.performClick(nil)
+        statusItem.menu = nil
+    }
+
+    private func togglePopover() {
+        guard let button = statusItem?.button else { return }
+        if let popover, popover.isShown {
+            popover.performClose(nil)
+            return
+        }
+        let view = UsageMenuView(
+            onShowTouchBar: { [weak self] in
+                self?.popover?.performClose(nil)
+                self?.controller.present()
+            },
+            onOpenSettings: { [weak self] in
+                self?.popover?.performClose(nil)
+                self?.openUsageSettings()
+            },
+            onOpenMoreMenu: { [weak self] in
+                self?.showStatusMenu()
+            },
+            onQuit: {
+                NSApp.terminate(nil)
+            }
+        )
+        .environmentObject(UsageStore.shared)
+        let popover = NSPopover()
+        popover.behavior = .transient
+        popover.contentViewController = NSHostingController(rootView: view)
+        self.popover = popover
+        popover.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+        popover.contentViewController?.view.window?.makeKey()
+    }
+
+    // MARK: - 구독 한도
+
+    private func startUsage() {
+        _ = UsageStore.shared
+        usageObserver = UsageStore.shared.$snapshots.sink { [weak self] _ in
+            DispatchQueue.main.async { self?.updateStatusTitle() }
+        }
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(defaultsChanged),
+            name: UserDefaults.didChangeNotification,
+            object: nil
+        )
+        updateStatusTitle()
+    }
+
+    @objc private func defaultsChanged() {
+        updateStatusTitle()
+    }
+
+    /// 메뉴바 아이콘 옆 글자: "C 42%  X 73%" (한도 설정의 메뉴바 표시 방식에 따라)
+    private func updateStatusTitle() {
+        guard let button = statusItem?.button else { return }
+        let style = UserDefaults.standard.string(forKey: "menuBarStyle") ?? "all"
+        let snapshots = UsageStore.shared.orderedSnapshots.filter { $0.primary != nil }
+        var text = ""
+        switch style {
+        case "icon":
+            text = ""
+        case "max":
+            if let top = snapshots.max(by: { ($0.highestUsed ?? 0) < ($1.highestUsed ?? 0) }), let used = top.highestUsed {
+                text = "\(top.provider.shortName) \(Format.percent(used))"
+            }
+        default:
+            text = snapshots
+                .compactMap { snapshot in snapshot.primary.map { "\(snapshot.provider.shortName) \(Format.percent($0.usedPercent))" } }
+                .joined(separator: "  ")
+        }
+        let title = text.isEmpty ? "" : " " + text
+        if button.title != title { button.title = title }
+    }
+
+    private func openUsageSettings() {
+        if let window = usageSettingsWindow {
+            window.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        let controller = NSHostingController(rootView: UsageSettingsView().environmentObject(UsageStore.shared))
+        let window = NSWindow(contentViewController: controller)
+        window.title = "구독 한도 설정"
+        window.styleMask = [.titled, .closable, .miniaturizable]
+        window.isReleasedWhenClosed = false
+        window.center()
+        usageSettingsWindow = window
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+    }
+
+    /// 터치바에 서비스별 한도 상세를 펼친다 (usage 위젯을 누르면)
+    private func showUsageTouchBar() {
+        currentPresetKey = "usage"
+        controller.show(UsageTouchBar.items(), hideControlStrip: config?.hideControlStrip ?? true, forcePresent: true)
+    }
+
+    /// 한도 상세를 닫으면 원래 프리셋으로 조용히 되돌려 둔다
+    private func restorePresetAfterUsage() {
+        guard currentPresetKey == "usage" else { return }
+        currentPresetKey = nil
+        applyPreset(reloaded: false)
     }
 
     func menuNeedsUpdate(_ menu: NSMenu) {
@@ -179,6 +318,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
 
         addAction(menu, "터치바 보이기", #selector(showBar))
         addAction(menu, "터치바 접기", #selector(hideBar))
+        addAction(menu, "터치바에 구독 한도 펼치기", #selector(showUsageFromMenu))
+        menu.addItem(.separator())
+
+        addAction(menu, "구독 한도 새로고침", #selector(refreshUsageFromMenu))
+        addAction(menu, "구독 한도 설정…", #selector(openUsageSettingsFromMenu))
         menu.addItem(.separator())
 
         addAction(menu, "설정 다시 불러오기", #selector(reloadFromMenu), key: "r")
@@ -219,6 +363,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     // MARK: - 메뉴 동작
+
+    @objc private func showUsageFromMenu() {
+        showUsageTouchBar()
+    }
+
+    @objc private func refreshUsageFromMenu() {
+        Task { @MainActor in await UsageStore.shared.refresh() }
+    }
+
+    @objc private func openUsageSettingsFromMenu() {
+        openUsageSettings()
+    }
 
     @objc private func showBar() {
         controller.present()

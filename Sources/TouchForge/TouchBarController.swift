@@ -7,7 +7,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
     private let touchBar = NSTouchBar()
     private var trayItem: NSCustomTouchBarItem?
     private var itemsByIdentifier: [NSTouchBarItem.Identifier: NSTouchBarItem] = [:]
-    private var widgets: [Widget] = []
+    private var widgets: [BarWidget] = []
     private var generation = 0
 
     private(set) var hideControlStrip = true
@@ -20,7 +20,7 @@ final class TouchBarController: NSObject, NSTouchBarDelegate {
 
     /// 컨트롤 스트립에 끼워 넣은 작은 아이템들 (애플 터치바 유지 모드)
     private var stripItems: [NSTouchBarItem] = []
-    private var stripWidgets: [Widget] = []
+    private var stripWidgets: [BarWidget] = []
 
     override init() {
         super.init()

@@ -59,7 +59,7 @@ struct ItemConfig: Codable {
     var text: String?
     var speed: Double?       // 초당 이동 포인트
 
-    // limitlens 위젯: 보여줄 서비스만 고르기 (예: ["claude", "codex"])
+    // usage 위젯: 보여줄 서비스만 고르기 (예: ["claude", "codex"])
     var providers: [String]?
 
     static func label(_ text: String, color: String? = nil) -> ItemConfig {

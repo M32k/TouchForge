@@ -4,7 +4,7 @@ import AppKit
 enum ItemFactory {
     struct Built {
         let item: NSTouchBarItem
-        let widget: Widget?
+        let widget: BarWidget?
     }
 
     static let barHeight: CGFloat = 30
@@ -71,15 +71,15 @@ enum ItemFactory {
             )
             return wrap(button, identifier, config, widget: widget)
 
-        case "limitlens", "usage":
-            // LimitLens 앱이 저장한 구독 한도 % 표시. 누르면 LimitLens 를 연다
+        case "usage", "limitlens":
+            // 구독 한도 % (C42 X73 G12). 누르면 서비스별 상세 터치바가 열린다
             var c = config
-            if c.action == nil { c.action = ActionConfig(type: "launch", app: "com.m32k.limitlens") }
+            if c.action == nil { c.action = ActionConfig(type: "usage") }
             let button = makeButton(c, bordered: false, monospaced: true, useTitle: false)
-            let widget = LimitLensUsageWidget(
+            let widget = UsageBarWidget(
                 button: button,
                 providers: config.providers,
-                interval: config.interval ?? 30,
+                interval: config.interval ?? 5,
                 prefix: config.title
             )
             return wrap(button, identifier, c, widget: widget)
@@ -204,7 +204,7 @@ enum ItemFactory {
         _ view: NSView,
         _ identifier: NSTouchBarItem.Identifier,
         _ config: ItemConfig,
-        widget: Widget? = nil,
+        widget: BarWidget? = nil,
         defaultWidth: CGFloat? = nil
     ) -> Built {
         let item = NSCustomTouchBarItem(identifier: identifier)

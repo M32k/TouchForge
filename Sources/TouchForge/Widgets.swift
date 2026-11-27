@@ -1,13 +1,13 @@
 import AppKit
 
 /// 주기적으로 갱신되는 아이템
-protocol Widget: AnyObject {
+protocol BarWidget: AnyObject {
     func start()
     func stop()
 }
 
 /// 일정 간격으로 update() 를 부르고 버튼 글자를 바꾸는 위젯의 공통 부모
-class TimedWidget: NSObject, Widget {
+class TimedWidget: NSObject, BarWidget {
     let button: ActionButton
     let interval: TimeInterval
     let prefix: String?
@@ -225,12 +225,9 @@ final class StockWidget: TimedWidget {
     }
 }
 
-// MARK: - LimitLens 구독 한도 (LimitLens 앱이 저장한 파일을 읽는다)
+// MARK: - 구독 한도 (같은 앱의 UsageStore 가 읽어 둔 값)
 
-final class LimitLensUsageWidget: TimedWidget {
-    static let fileURL = FileManager.default.homeDirectoryForCurrentUser
-        .appendingPathComponent("Library/Application Support/LimitLens/snapshots.json")
-
+final class UsageBarWidget: TimedWidget {
     private static let letters = ["claude": "C", "codex": "X", "gemini": "G"]
     private let providers: Set<String>?
 
@@ -240,24 +237,20 @@ final class LimitLensUsageWidget: TimedWidget {
     }
 
     override func update() {
-        guard let data = try? Data(contentsOf: Self.fileURL),
-              let json = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any],
-              let snapshots = json["snapshots"] as? [[String: Any]] else {
+        let snapshots = UsageCache.shared.snapshots
+        guard !snapshots.isEmpty else {
             show("한도 —")
             return
         }
-
-        // LimitLens 가 30분 넘게 갱신을 안 했으면 회색으로 (앱이 꺼져 있을 수 있음)
-        let updatedAt = (json["updatedAt"] as? NSNumber).map { Date(timeIntervalSince1970: $0.doubleValue) }
-        let isStale = updatedAt.map { Date().timeIntervalSince($0) > 30 * 60 } ?? true
+        // 30분 넘게 갱신이 없으면 회색 (네트워크·로그인 문제일 수 있음)
+        let isStale = UsageCache.shared.updatedAt.map { Date().timeIntervalSince($0) > 30 * 60 } ?? true
 
         var entries: [(text: String, color: NSColor?)] = []
         for snapshot in snapshots {
-            guard let provider = snapshot["provider"] as? String else { continue }
+            let provider = snapshot.provider.rawValue
             if let providers, !providers.contains(provider) { continue }
             let letter = Self.letters[provider] ?? String(provider.prefix(1)).uppercased()
-            let windows = snapshot["windows"] as? [[String: Any]] ?? []
-            guard let used = (windows.first?["usedPercent"] as? NSNumber)?.doubleValue else {
+            guard let used = snapshot.primary?.usedPercent else {
                 entries.append((text: letter + "—", color: NSColor.secondaryLabelColor))
                 continue
             }
@@ -279,5 +272,56 @@ final class LimitLensUsageWidget: TimedWidget {
             parts.append(entry)
         }
         button.setParts(parts)
+    }
+}
+
+/// "usage" 를 누르면 펼쳐지는 상세 터치바: 서비스별 5시간·주간 % 와 리셋까지 남은 시간
+enum UsageTouchBar {
+    static func items() -> [ItemConfig] {
+        var items: [ItemConfig] = []
+        let snapshots = UsageCache.shared.snapshots
+        if snapshots.isEmpty {
+            items.append(.label("구독 한도 정보가 아직 없어요. 메뉴바에서 확인해 주세요", color: "#FF9F0A"))
+        }
+        let names: [ProviderID: (String, String)] = [
+            .claude: ("Claude", "#D97757"),
+            .codex: ("Codex", "#10A37F"),
+            .gemini: ("Gemini", "#4285F4"),
+        ]
+        for snapshot in snapshots {
+            let (name, hex) = names[snapshot.provider] ?? (snapshot.provider.displayName, "#FFFFFF")
+            items.append(.label(name, color: hex))
+            if snapshot.windows.isEmpty {
+                items.append(.label("연결 안 됨", color: "#8E8E93"))
+            }
+            for window in snapshot.windows.prefix(2) {
+                var text = "\(window.title) \(Format.percent(window.usedPercent))"
+                if let reset = window.resetsAt {
+                    text += " · " + shortReset(reset)
+                }
+                let color = window.usedPercent >= 90 ? "#FF453A" : (window.usedPercent >= 70 ? "#FF9F0A" : "#FFFFFF")
+                var item = ItemConfig.label(text, color: color)
+                item.fontSize = 13
+                items.append(item)
+            }
+            items.append(ItemConfig(type: "smallSpace"))
+        }
+        items.append(ItemConfig(type: "flexibleSpace"))
+        var refresh = ItemConfig(type: "button")
+        refresh.symbol = "arrow.clockwise"
+        refresh.action = ActionConfig(type: "usageRefresh")
+        items.append(refresh)
+        items.append(ItemConfig(type: "close"))
+        return items
+    }
+
+    /// "2시간 10분 후 리셋" → 터치바용으로 짧게 "2:10"
+    private static func shortReset(_ date: Date) -> String {
+        let seconds = max(0, Int(date.timeIntervalSinceNow))
+        let days = seconds / 86_400
+        let hours = (seconds % 86_400) / 3_600
+        let minutes = (seconds % 3_600) / 60
+        if days > 0 { return "\(days)일 \(hours)시간" }
+        return String(format: "%d:%02d", hours, minutes)
     }
 }
