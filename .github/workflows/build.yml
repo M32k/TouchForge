@@ -16,14 +16,20 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Swift 버전
-        run: swift --version
+      - name: XcodeGen 설치
+        run: brew install xcodegen
 
       - name: 유니버설(인텔 + 애플 실리콘) 빌드
         run: ARCHS="x86_64 arm64" bash scripts/build-app.sh
 
-      - name: 인텔(x86_64) 포함 여부 확인
-        run: lipo -archs build/TouchForge.app/Contents/MacOS/TouchForge | grep -q x86_64
+      - name: 에러 요약
+        if: failure()
+        run: grep -E "error:" build/build.log | head -50 || true
+
+      - name: 결과 확인 (인텔 포함, 위젯 포함)
+        run: |
+          lipo -archs build/TouchForge.app/Contents/MacOS/TouchForge | grep -q x86_64
+          ls build/TouchForge.app/Contents/PlugIns/TouchForgeWidget.appex
 
       - name: zip 으로 묶기
         run: cd build && ditto -c -k --keepParent TouchForge.app TouchForge.zip
