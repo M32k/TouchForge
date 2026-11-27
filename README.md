@@ -3,6 +3,8 @@
 인텔 맥북 프로의 **터치바를 시스템 전체에서 내 마음대로** 바꾸는 macOS 메뉴바 앱.
 어떤 앱을 쓰든 내가 만든 터치바가 뜨고, 앞에 있는 앱에 따라 구성이 자동으로 바뀝니다.
 
+> 📝 개발기: [인텔 맥북 터치바에 Claude · Codex 구독 한도 띄우기 — TouchForge 개발기](https://velog.io/@m32k/%EC%9D%B8%ED%85%94-%EB%A7%A5%EB%B6%81-%ED%84%B0%EC%B9%98%EB%B0%94%EC%97%90-Claude-Codex-%EA%B5%AC%EB%8F%85-%ED%95%9C%EB%8F%84-%EB%9D%84%EC%9A%B0%EA%B8%B0-TouchForge-%EA%B0%9C%EB%B0%9C%EA%B8%B0)
+
 - **커스텀 버튼**: 앱 실행, 단축키 입력, 셸 명령, URL 열기, AppleScript, 볼륨/밝기/재생 키
 - **정보 위젯**: 시계, 배터리, CPU, 메모리, 날씨(open-meteo), 주식(야후 파이낸스), 셸 명령 결과
 - **이미지·애니메이션**: PNG/JPG, 움직이는 GIF, 흐르는 글자(전광판)
