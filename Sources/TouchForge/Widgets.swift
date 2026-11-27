@@ -250,10 +250,8 @@ final class UsageBarWidget: TimedWidget {
             let provider = snapshot.provider.rawValue
             if let providers, !providers.contains(provider) { continue }
             let letter = Self.letters[provider] ?? String(provider.prefix(1)).uppercased()
-            guard let used = snapshot.primary?.usedPercent else {
-                entries.append((text: letter + "—", color: NSColor.secondaryLabelColor))
-                continue
-            }
+            // 연결 안 된(값이 없는) 서비스는 터치바에 표시하지 않는다
+            guard let used = snapshot.primary?.usedPercent else { continue }
             var color: NSColor? = nil
             if used >= 90 { color = .systemRed } else if used >= 70 { color = .systemOrange }
             if isStale { color = .secondaryLabelColor }
@@ -279,9 +277,10 @@ final class UsageBarWidget: TimedWidget {
 enum UsageTouchBar {
     static func items() -> [ItemConfig] {
         var items: [ItemConfig] = []
-        let snapshots = UsageCache.shared.snapshots
+        // 연결된(값을 읽어 온) 서비스만
+        let snapshots = UsageCache.shared.snapshots.filter { !$0.windows.isEmpty }
         if snapshots.isEmpty {
-            items.append(.label("구독 한도 정보가 아직 없어요. 메뉴바에서 확인해 주세요", color: "#FF9F0A"))
+            items.append(.label("연결된 서비스가 없어요. 메뉴바 팝오버에서 확인해 주세요", color: "#FF9F0A"))
         }
         let names: [ProviderID: (String, String)] = [
             .claude: ("Claude", "#D97757"),
@@ -291,9 +290,6 @@ enum UsageTouchBar {
         for snapshot in snapshots {
             let (name, hex) = names[snapshot.provider] ?? (snapshot.provider.displayName, "#FFFFFF")
             items.append(.label(name, color: hex))
-            if snapshot.windows.isEmpty {
-                items.append(.label("연결 안 됨", color: "#8E8E93"))
-            }
             for window in snapshot.windows.prefix(2) {
                 var text = "\(window.title) \(Format.percent(window.usedPercent))"
                 if let reset = window.resetsAt {
@@ -376,6 +372,8 @@ final class UsageStripView: NSView, BarWidget {
         let snapshots = UsageCache.shared.snapshots
         isStale = UsageCache.shared.updatedAt.map { Date().timeIntervalSince($0) > 30 * 60 } ?? true
         entries = snapshots.compactMap { snapshot in
+            // 연결 안 된(값이 없는) 서비스는 터치바에 표시하지 않는다
+            guard !snapshot.windows.isEmpty else { return nil }
             let provider = snapshot.provider.rawValue
             if let providers, !providers.contains(provider) { return nil }
             return Entry(
