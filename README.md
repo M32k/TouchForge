@@ -76,7 +76,7 @@ open /Applications/TouchForge.app
 
 보는 곳:
 
-- **터치바**: 컨트롤 스트립의 `usage` 위젯에 `C42 X73 G12` (70%↑ 주황, 90%↑ 빨강). 누르면 서비스별 5시간·주간 % 와 리셋까지 남은 시간이 터치바에 펼쳐져요.
+- **터치바**: 애플 기본 터치바는 그대로, 컨트롤 스트립에 서비스별 미니 막대 (윗줄 `C 42`, 굵은 막대 5시간, 얇은 막대 주간, 70%↑ 주황, 90%↑ 빨강). 누르면 서비스별 5시간·주간 % 와 리셋까지 남은 시간이 터치바에 펼쳐져요.
 - **메뉴바**: 아이콘 옆에 `C 42%  X 73%`, 왼쪽 클릭하면 서비스별 카드가 있는 팝오버.
 - **바탕화면 위젯**: 바탕화면 우클릭 → 위젯 편집 → TouchForge (작게·중간·크게).
 - **알림**: 80% · 95% 를 넘으면 알려줘요.
@@ -112,7 +112,7 @@ open /Applications/TouchForge.app
 ```json
 {
   "mode": "strip",
-  "strip": [ { "type": "usage", "fontSize": 13 }, { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
+  "strip": [ { "type": "usage" }, { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
   "passthrough": [ "com.apple.FinalCut" ],
   "hideControlStrip": true,
   "default": [ 아이템, 아이템, ... ],
@@ -164,7 +164,7 @@ open /Applications/TouchForge.app
 | `weather` | 현재 날씨·기온 | `latitude`, `longitude` |
 | `stock` | 주가·등락률 (상승 빨강/하락 파랑) | `ticker` (`"005930.KS"`, `"AAPL"`), `name` |
 | `shell` | 셸 명령 결과 첫 줄 | `command` |
-| `usage` | 구독 한도 % (`C42 X73 G12`, 70%↑ 주황·90%↑ 빨강, 누르면 터치바에 상세) | `providers` (예: `["claude", "codex"]`) |
+| `usage` | 구독 한도. 기본은 서비스별 미니 막대(윗줄 `C 42` = 5시간 %, 굵은 막대 = 5시간, 얇은 막대 = 주간), 70%↑ 주황·90%↑ 빨강, 누르면 터치바에 상세 | `providers` (예: `["claude", "codex"]`), `style` (`"bars"` 기본 / `"text"` 는 `C42 X73 G12` 글자만) |
 | `image` / `gif` | 이미지·움직이는 GIF | `image` |
 | `marquee` | 흐르는 글자 | `text`, `speed` (초당 pt, 기본 40) |
 | `space` | 빈칸 | `width` |
