@@ -32,7 +32,21 @@
 
 ## 설치
 
-### 방법 1: 맥북에서 직접 빌드 (추천)
+### 방법 1: 내려받기 (가장 쉬움)
+
+**[⬇️ TouchForge.zip 내려받기](https://github.com/M32k/TouchForge/releases/latest/download/TouchForge.zip)** (인텔 · 애플 실리콘 공용, macOS 14 이상)
+— 지난 버전은 [Releases](https://github.com/M32k/TouchForge/releases) 에 있어요.
+
+받은 zip 을 풀고, 개발자 서명이 없는 앱이라 처음 한 번은 격리 속성을 지워야 열려요.
+(안 지우면 "손상되었기 때문에 열 수 없습니다" 가 뜹니다.)
+
+```bash
+xattr -cr ~/Downloads/TouchForge.app
+mv ~/Downloads/TouchForge.app /Applications/
+open /Applications/TouchForge.app
+```
+
+### 방법 2: 맥북에서 직접 빌드
 
 ```bash
 brew install xcodegen
@@ -46,16 +60,10 @@ open /Applications/TouchForge.app
 바탕화면 위젯 목록에 TouchForge 가 안 보이면 `xcodegen generate` 후 `TouchForge.xcodeproj` 를 Xcode 로 열고,
 두 타깃(TouchForge, TouchForgeWidget)의 Signing & Capabilities 에서 Team 을 내 Apple ID(Personal Team)로 고른 뒤 ▶︎ 실행하세요.
 
-### 방법 2: GitHub Actions 빌드 받기
+### 방법 3: 최신 개발 빌드
 
-저장소의 **Actions → Build → 최신 실행 → Artifacts → TouchForge** 에서 zip 을 받아 풉니다.
-서명되지 않은 앱이라 처음 한 번은 격리 속성을 지워야 열려요.
-
-```bash
-xattr -cr ~/Downloads/TouchForge.app
-mv ~/Downloads/TouchForge.app /Applications/
-open /Applications/TouchForge.app
-```
+릴리스 전 최신 코드는 **Actions → Build → 최신 실행 → Artifacts → TouchForge** 에서 받을 수 있어요
+(깃허브 로그인 필요, 90일 보관). 여는 방법은 방법 1 과 같습니다.
 
 ### 처음 실행 후 할 일
 
