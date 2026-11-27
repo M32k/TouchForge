@@ -7,6 +7,7 @@
 - **정보 위젯**: 시계, 배터리, CPU, 메모리, 날씨(open-meteo), 주식(야후 파이낸스), 셸 명령 결과
 - **이미지·애니메이션**: PNG/JPG, 움직이는 GIF, 흐르는 글자(전광판)
 - **앱별 프리셋**: 번들 ID 마다 다른 터치바, 앱을 바꾸면 자동 전환
+- **AI 구독 한도**: Claude · ChatGPT(Codex) · Gemini CLI 의 5시간/주간 한도 % 를 터치바, 메뉴바, 바탕화면 위젯에서 확인
 - `config.json` 을 저장하는 순간 바로 반영 (재시작 필요 없음)
 
 ## 두 가지 모드
@@ -23,21 +24,25 @@
 
 ## 요구 사항
 
-- 터치바가 있는 MacBook Pro (인텔 2016~2020)
-- macOS 13 Ventura 이상 (Tahoe 26 대상으로 작성)
-- 빌드하려면 Xcode 또는 Command Line Tools (`xcode-select --install`)
+- 터치바가 있는 MacBook Pro (인텔 2016~2020) — 터치바가 없는 Mac 에서도 구독 한도(메뉴바·위젯)는 동작
+- macOS 14 Sonoma 이상 (Tahoe 26 대상으로 작성)
+- 빌드하려면 Xcode 와 XcodeGen (`brew install xcodegen`)
 
 ## 설치
 
 ### 방법 1: 맥북에서 직접 빌드 (추천)
 
 ```bash
+brew install xcodegen
 git clone https://github.com/M32k/TouchForge.git
 cd TouchForge
 bash scripts/build-app.sh
 mv build/TouchForge.app /Applications/
 open /Applications/TouchForge.app
 ```
+
+바탕화면 위젯 목록에 TouchForge 가 안 보이면 `xcodegen generate` 후 `TouchForge.xcodeproj` 를 Xcode 로 열고,
+두 타깃(TouchForge, TouchForgeWidget)의 Signing & Capabilities 에서 Team 을 내 Apple ID(Personal Team)로 고른 뒤 ▶︎ 실행하세요.
 
 ### 방법 2: GitHub Actions 빌드 받기
 
@@ -56,11 +61,41 @@ open /Applications/TouchForge.app
    시스템 설정 → 개인정보 보호 및 보안 → 손쉬운 사용 에서 TouchForge 를 켜 주세요.
    (다시 빌드하면 서명이 바뀌어서 권한을 껐다 켜야 할 수 있어요.)
 2. **터치바 설정**: 시스템 설정 → 키보드 → 터치바 설정 → "터치바에 표시"를 **앱 제어**로 두세요.
-3. 메뉴바 아이콘 → **로그인 시 자동 실행** 을 켜면 부팅할 때마다 자동으로 뜹니다.
+3. 메뉴바 아이콘 **오른쪽 클릭** → **로그인 시 자동 실행** 을 켜면 부팅할 때마다 자동으로 뜹니다.
+4. **구독 한도**: Claude Code 를 쓰면 처음에 "TouchForge 가 키체인의 Claude Code-credentials 를 사용하려고 합니다" 가 떠요. **항상 허용** 을 눌러 주세요.
+
+## 구독 한도 (Claude · Codex · Gemini)
+
+서비스마다 맞는 방법으로 연결해서 구독 한도 % 를 5분마다 읽어요. "자동" 으로 두면 아래 순서대로 시도해요.
+
+| 서비스 | 연결 방법 | 보이는 한도 |
+|---|---|---|
+| **Claude** (Pro/Max) | ① CLI 계정 — Claude Code 로그인 정보 (키체인)<br>② 웹 로그인 — 앱 안에서 claude.ai 공식 로그인 | 5시간, 주간, 모델별 주간 |
+| **ChatGPT · Codex** (Plus/Pro) | ① CLI 계정 — `~/.codex/auth.json`<br>② 웹 로그인 — chatgpt.com 공식 로그인<br>③ 로컬 기록 — `~/.codex/sessions` | 5시간, 주간 |
+| **Gemini CLI** | ① CLI 계정 — `~/.gemini/oauth_creds.json` | 모델별 일일 한도 |
+
+보는 곳:
+
+- **터치바**: 컨트롤 스트립의 `usage` 위젯에 `C42 X73 G12` (70%↑ 주황, 90%↑ 빨강). 누르면 서비스별 5시간·주간 % 와 리셋까지 남은 시간이 터치바에 펼쳐져요.
+- **메뉴바**: 아이콘 옆에 `C 42%  X 73%`, 왼쪽 클릭하면 서비스별 카드가 있는 팝오버.
+- **바탕화면 위젯**: 바탕화면 우클릭 → 위젯 편집 → TouchForge (작게·중간·크게).
+- **알림**: 80% · 95% 를 넘으면 알려줘요.
+
+비밀번호는 TouchForge 가 받지 않아요. 웹 로그인은 공식 로그인 페이지를 그대로 띄우고, 로그인 쿠키는 macOS WebKit 저장소에만 남아요.
+한도 값은 `~/Library/Application Support/TouchForge/usage.json` 에 저장돼요 (바탕화면 위젯이 읽는 파일).
+
+> ⚠️ 세 서비스 모두 사용량 API 가 **비공개** 라 사이트가 바뀌면 깨질 수 있어요.
+> Claude 는 2026년 2월 약관에서 구독 OAuth 토큰을 Claude.ai·Claude Code 전용으로 정했어요. TouchForge 는 사용량을 읽기만 하지만 공식 허용 방식은 아니에요.
+> Gemini CLI 는 Google 이 2026-06-18 부터 개인·AI Pro·Ultra 계정 로그인을 끝내서 Workspace·Standard 계정만 한도가 나와요.
 
 ## 사용법
 
-메뉴바 아이콘을 누르면:
+메뉴바 아이콘을 **왼쪽 클릭** 하면 구독 한도 팝오버, **오른쪽 클릭** 하면 TouchForge 메뉴가 열려요.
+
+| 메뉴 | 설명 |
+|---|---|
+| 터치바에 구독 한도 펼치기 | 터치바에 서비스별 한도 상세 표시 |
+| 구독 한도 새로고침 / 설정… | 서비스 켜고 끄기, 연결 방법, 웹 로그인, 새로고침 간격, 메뉴바 표시, 알림 |
 
 | 메뉴 | 설명 |
 |---|---|
@@ -77,7 +112,7 @@ open /Applications/TouchForge.app
 ```json
 {
   "mode": "strip",
-  "strip": [ { "type": "limitlens", "fontSize": 13 }, { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
+  "strip": [ { "type": "usage", "fontSize": 13 }, { "type": "battery", "width": 58 }, { "type": "clock", "format": "HH:mm", "width": 50 } ],
   "passthrough": [ "com.apple.FinalCut" ],
   "hideControlStrip": true,
   "default": [ 아이템, 아이템, ... ],
@@ -129,7 +164,7 @@ open /Applications/TouchForge.app
 | `weather` | 현재 날씨·기온 | `latitude`, `longitude` |
 | `stock` | 주가·등락률 (상승 빨강/하락 파랑) | `ticker` (`"005930.KS"`, `"AAPL"`), `name` |
 | `shell` | 셸 명령 결과 첫 줄 | `command` |
-| `limitlens` | [LimitLens](https://github.com/M32k/LimitLens) 구독 한도 % (`C42 X73 G12`, 70%↑ 주황·90%↑ 빨강, 누르면 LimitLens 열기) | `providers` (예: `["claude", "codex"]`) |
+| `usage` | 구독 한도 % (`C42 X73 G12`, 70%↑ 주황·90%↑ 빨강, 누르면 터치바에 상세) | `providers` (예: `["claude", "codex"]`) |
 | `image` / `gif` | 이미지·움직이는 GIF | `image` |
 | `marquee` | 흐르는 글자 | `text`, `speed` (초당 pt, 기본 40) |
 | `space` | 빈칸 | `width` |
@@ -148,6 +183,8 @@ open /Applications/TouchForge.app
 | `url` | `{ "type": "url", "url": "https://velog.io" }` |
 | `applescript` | `{ "type": "applescript", "source": "tell application \"Music\" to playpause" }` |
 | `minimize` | 우리 터치바 접기 |
+| `usage` | 터치바에 구독 한도 상세 펼치기 |
+| `usageRefresh` | 구독 한도 지금 새로고침 |
 
 - `key` 이름: `a`~`z`, `0`~`9`, `esc`, `return`, `tab`, `space`, `delete`, `left`/`right`/`up`/`down`, `f1`~`f12`, `[`, `]`, `` ` `` 등. 목록에 없으면 `"keyCode": 53` 처럼 가상 키코드 직접 지정
 - `modifiers`: `cmd`, `shift`, `option`, `control`, `fn`
@@ -164,17 +201,11 @@ open /Applications/TouchForge.app
 ## 구조
 
 ```
-Sources/TouchForge/
-├── main.swift               앱 시작
-├── AppDelegate.swift        메뉴바, 앱 전환 감지, 프리셋 선택
-├── TouchBarController.swift 터치바 구성·표시
-├── PrivateTouchBar.swift    비공개 API 래퍼 (DFRFoundation)
-├── ItemFactory.swift        설정 → 터치바 아이템
-├── Views.swift              버튼, 이미지, 전광판 뷰
-├── Widgets.swift            시계·배터리·CPU·메모리·날씨·주식·셸 위젯
-├── ActionRunner.swift       버튼 동작 (키 입력, 미디어 키, 셸 등)
-├── SystemStats.swift        배터리/CPU/메모리 수치
-├── Config.swift             설정 구조
-├── ConfigStore.swift        설정 읽기 + 변경 감시
-└── DefaultConfig.swift      기본 설정 + 샘플 GIF
+project.yml                  XcodeGen 설정 (앱 + 위젯 확장)
+Sources/TouchForge/          터치바 앱 — 메뉴바, 프리셋, 비공개 API, 버튼·위젯
+Sources/Usage/               구독 한도 — Claude·Codex·Gemini 연결, 웹 로그인, 팝오버·설정 화면
+Sources/Shared/              앱·위젯 공용 모델과 저장소
+Sources/Widget/              바탕화면 위젯 (WidgetKit)
+Support/Info.plist           앱 Info.plist
+scripts/build-app.sh         빌드 스크립트
 ```

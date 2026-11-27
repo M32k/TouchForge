@@ -1,0 +1,64 @@
+name: TouchForge
+
+options:
+  bundleIdPrefix: com.m32k
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.2.0"
+    CURRENT_PROJECT_VERSION: "2"
+    # 기본은 "Sign to Run Locally"(임시 서명). 위젯이 안 보이면 Xcode 에서 Team 을 고르세요.
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    MACOSX_DEPLOYMENT_TARGET: "14.0"
+
+targets:
+  TouchForge:
+    type: application
+    platform: macOS
+    sources:
+      - path: Sources/TouchForge
+      - path: Sources/Usage
+      - path: Sources/Shared
+    dependencies:
+      - target: TouchForgeWidget
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.m32k.TouchForge
+        PRODUCT_NAME: TouchForge
+        INFOPLIST_FILE: Support/Info.plist
+    scheme: {}
+
+  TouchForgeWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - path: Sources/Widget
+      - path: Sources/Shared
+    info:
+      path: Support/Widget-Info.plist
+      properties:
+        CFBundleDisplayName: TouchForge 구독 한도
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Support/TouchForgeWidget.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        # TouchForge 가 저장한 구독 한도 파일(usage.json)만 읽기 전용으로 허용
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /Library/Application Support/TouchForge/
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.m32k.TouchForge.widget
+        PRODUCT_NAME: TouchForgeWidget
+        SKIP_INSTALL: YES

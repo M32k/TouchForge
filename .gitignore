@@ -5,3 +5,5 @@ build/
 *.xcodeproj/
 xcuserdata/
 DerivedData/
+Support/Widget-Info.plist
+Support/TouchForgeWidget.entitlements
