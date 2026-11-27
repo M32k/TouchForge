@@ -46,8 +46,15 @@ struct LimitWidgetView: View {
     let entry: LimitEntry
     @Environment(\.widgetFamily) private var family
 
+    /// 연결된(값을 읽어 온) 서비스만 남긴 묶음
+    private var connected: SnapshotBundle? {
+        guard var bundle = entry.bundle else { return nil }
+        bundle.snapshots = bundle.snapshots.filter { !$0.windows.isEmpty }
+        return bundle.snapshots.isEmpty ? nil : bundle
+    }
+
     var body: some View {
-        if let bundle = entry.bundle, !bundle.snapshots.isEmpty {
+        if let bundle = connected {
             switch family {
             case .systemSmall:
                 SmallLimitView(bundle: bundle)
@@ -58,7 +65,7 @@ struct LimitWidgetView: View {
             VStack(spacing: 6) {
                 Image(systemName: "gauge.with.dots.needle.50percent")
                     .font(.title2)
-                Text("TouchForge 를 실행해 주세요")
+                Text(entry.bundle == nil ? "TouchForge 를 실행해 주세요" : "연결된 서비스가 없어요")
                     .font(.caption)
                     .multilineTextAlignment(.center)
             }
