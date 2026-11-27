@@ -224,9 +224,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     // MARK: - 구독 한도
 
     private func startUsage() {
-        _ = UsageStore.shared
-        usageObserver = UsageStore.shared.$snapshots.sink { [weak self] _ in
-            DispatchQueue.main.async { self?.updateStatusTitle() }
+        // 앱 시작은 항상 메인 스레드라서 UsageStore(@MainActor)에 바로 접근해도 안전하다
+        MainActor.assumeIsolated {
+            _ = UsageStore.shared
+            usageObserver = UsageStore.shared.$snapshots.sink { [weak self] _ in
+                DispatchQueue.main.async { self?.updateStatusTitle() }
+            }
         }
         NotificationCenter.default.addObserver(
             self,
@@ -245,7 +248,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func updateStatusTitle() {
         guard let button = statusItem?.button else { return }
         let style = UserDefaults.standard.string(forKey: "menuBarStyle") ?? "all"
-        let snapshots = UsageStore.shared.orderedSnapshots.filter { $0.primary != nil }
+        let snapshots = MainActor.assumeIsolated { UsageStore.shared.orderedSnapshots }
+            .filter { $0.primary != nil }
         var text = ""
         switch style {
         case "icon":
