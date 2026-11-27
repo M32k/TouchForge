@@ -72,9 +72,19 @@ enum ItemFactory {
             return wrap(button, identifier, config, widget: widget)
 
         case "usage", "limitlens":
-            // 구독 한도 % (C42 X73 G12). 누르면 서비스별 상세 터치바가 열린다
+            // 구독 한도. 기본은 서비스별 미니 막대, style: "text" 면 C42 X73 G12 글자.
+            // 누르면 서비스별 상세 터치바가 열린다
             var c = config
             if c.action == nil { c.action = ActionConfig(type: "usage") }
+            if (config.style ?? "bars").lowercased() != "text" {
+                let view = UsageStripView(frame: .zero)
+                view.providers = config.providers.map { Set($0.map { $0.lowercased() }) }
+                if let action = c.action {
+                    view.onTap = { ActionRunner.run(action) }
+                }
+                let count = max(1, config.providers?.count ?? 3)
+                return wrap(view, identifier, c, widget: view, defaultWidth: CGFloat(count) * 44)
+            }
             let button = makeButton(c, bordered: false, monospaced: true, useTitle: false)
             let widget = UsageBarWidget(
                 button: button,

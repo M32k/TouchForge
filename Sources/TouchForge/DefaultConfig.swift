@@ -6,7 +6,7 @@ enum DefaultConfig {
 {
   "mode": "strip",
   "strip": [
-    {"type": "usage", "fontSize": 13},
+    {"type": "usage"},
     {"type": "battery", "width": 58},
     {"type": "clock", "format": "HH:mm", "width": 50}
   ],

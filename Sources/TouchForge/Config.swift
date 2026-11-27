@@ -61,6 +61,8 @@ struct ItemConfig: Codable {
 
     // usage 위젯: 보여줄 서비스만 고르기 (예: ["claude", "codex"])
     var providers: [String]?
+    // usage 위젯 모양: "bars"(기본, 미니 막대) 또는 "text"(C42 X73 글자만)
+    var style: String?
 
     static func label(_ text: String, color: String? = nil) -> ItemConfig {
         var item = ItemConfig(type: "label")

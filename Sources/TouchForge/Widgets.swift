@@ -325,3 +325,116 @@ enum UsageTouchBar {
         return String(format: "%d:%02d", hours, minutes)
     }
 }
+
+/// 컨트롤 스트립용 구독 한도 미니 막대
+/// 서비스마다 한 칸: 윗줄 "C 42"(5시간 %), 굵은 막대 = 5시간, 얇은 막대 = 주간
+final class UsageStripView: NSView, BarWidget {
+    struct Entry {
+        let letter: String
+        let primary: Double?
+        let secondary: Double?
+    }
+
+    static let letters = ["claude": "C", "codex": "X", "gemini": "G"]
+
+    var providers: Set<String>?
+    var onTap: (() -> Void)?
+
+    private var entries: [Entry] = []
+    private var isStale = false
+    private var timer: Timer?
+
+    override init(frame frameRect: NSRect) {
+        super.init(frame: frameRect)
+        let recognizer = NSClickGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+        recognizer.allowedTouchTypes = .direct
+        addGestureRecognizer(recognizer)
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) is not supported")
+    }
+
+    @objc private func handleTap(_ recognizer: NSClickGestureRecognizer) {
+        onTap?()
+    }
+
+    func start() {
+        stop()
+        refresh()
+        let timer = Timer(timeInterval: 5, target: self, selector: #selector(refresh), userInfo: nil, repeats: true)
+        RunLoop.main.add(timer, forMode: .common)
+        self.timer = timer
+    }
+
+    func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    @objc private func refresh() {
+        let snapshots = UsageCache.shared.snapshots
+        isStale = UsageCache.shared.updatedAt.map { Date().timeIntervalSince($0) > 30 * 60 } ?? true
+        entries = snapshots.compactMap { snapshot in
+            let provider = snapshot.provider.rawValue
+            if let providers, !providers.contains(provider) { return nil }
+            return Entry(
+                letter: Self.letters[provider] ?? String(provider.prefix(1)).uppercased(),
+                primary: snapshot.windows.first?.usedPercent,
+                secondary: snapshot.windows.count > 1 ? snapshot.windows[1].usedPercent : nil
+            )
+        }
+        needsDisplay = true
+    }
+
+    private func color(for used: Double?) -> NSColor {
+        guard let used, !isStale else { return NSColor(white: 0.55, alpha: 1) }
+        if used >= 90 { return .systemRed }
+        if used >= 70 { return .systemOrange }
+        return .systemGreen
+    }
+
+    override func draw(_ dirtyRect: NSRect) {
+        let font = NSFont.monospacedDigitSystemFont(ofSize: 11, weight: .medium)
+        guard !entries.isEmpty else {
+            let text = "한도 —" as NSString
+            let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: NSColor.secondaryLabelColor]
+            let size = text.size(withAttributes: attributes)
+            text.draw(at: NSPoint(x: (bounds.width - size.width) / 2, y: (bounds.height - size.height) / 2), withAttributes: attributes)
+            return
+        }
+
+        let cellWidth = bounds.width / CGFloat(entries.count)
+        for (index, entry) in entries.enumerated() {
+            let cell = NSRect(x: CGFloat(index) * cellWidth + 3, y: 0, width: cellWidth - 6, height: bounds.height)
+
+            // 윗줄: "C 42"
+            let percentText = entry.primary.map { "\(Int($0.rounded()))" } ?? "—"
+            let textColor: NSColor = isStale ? .secondaryLabelColor
+                : ((entry.primary ?? 0) >= 70 ? color(for: entry.primary) : .white)
+            let label = "\(entry.letter) \(percentText)" as NSString
+            let attributes: [NSAttributedString.Key: Any] = [.font: font, .foregroundColor: textColor]
+            let size = label.size(withAttributes: attributes)
+            label.draw(at: NSPoint(x: cell.midX - size.width / 2, y: bounds.height - size.height - 2), withAttributes: attributes)
+
+            // 굵은 막대: 5시간
+            drawBar(in: NSRect(x: cell.minX, y: 8, width: cell.width, height: 4), used: entry.primary)
+            // 얇은 막대: 주간
+            if entry.secondary != nil {
+                drawBar(in: NSRect(x: cell.minX, y: 3, width: cell.width, height: 2), used: entry.secondary)
+            }
+        }
+    }
+
+    private func drawBar(in rect: NSRect, used: Double?) {
+        NSColor(white: 1, alpha: 0.18).setFill()
+        NSBezierPath(roundedRect: rect, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
+        guard let used else { return }
+        let ratio = CGFloat(min(max(used, 0), 100) / 100)
+        guard ratio > 0 else { return }
+        var filled = rect
+        filled.size.width = max(rect.height, rect.width * ratio)
+        color(for: used).setFill()
+        NSBezierPath(roundedRect: filled, xRadius: rect.height / 2, yRadius: rect.height / 2).fill()
+    }
+}
